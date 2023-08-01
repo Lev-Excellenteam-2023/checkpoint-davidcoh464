@@ -25,7 +25,7 @@ void addStudent(School* school, int level, int cls, Student st)
 {
     --cls;
     --level;
-    if (level >= Num_Of_Level || cls >= Num_Of_Class)
+    if (level >= Num_Of_Level || level < 0 || cls >= Num_Of_Class || cls < 0)
     {
         printf("Error\n");
         return;
@@ -52,13 +52,61 @@ void printData(School* school)
             StudentNode* head = school->students[i][j];
             while (head != NULL)
             {
-                printf("%s\n", head->data._first_name);
+                print_student(&head->data);
                 head = head->next;
             }
         }
     }
 }
 
+void deleteStudentByPhone(School* school, const char* phone)
+{
+    for (int i = 0; i < Num_Of_Level; ++i)
+    {
+        for (int j = 0; j < Num_Of_Class; ++j)
+        {
+            StudentNode* head = school->students[i][j];
+            if (head != NULL && strcmp(head->data._phone, phone) == 0)
+            {
+                school->students[i][j] = head->next;
+                destroyStudentNode(head);
+                return;
+            }
+            while (head != NULL && head->next != NULL)
+            {
+                if (strcmp(phone, head->next->data._phone) == 0)
+                {
+                    StudentNode* next = head->next->next;
+                    destroyStudentNode(head->next);
+                    head->next = next;
+                    return;
+                }
+                head = head->next;
+            }
+        }
+    }
+    printf("Phone not found.\n");
+}
+
+Student* searchStudentByPhone(School* school, const char* phone)
+{
+    for (int i = 0; i < Num_Of_Level; ++i)
+    {
+        for (int j = 0; j < Num_Of_Class; ++j)
+        {
+            StudentNode* current = school->students[i][j];
+            while (current != NULL)
+            {
+                if (strcmp(phone, current->data._phone) == 0)
+                {
+                    return &(current->data);
+                }
+                current = current->next;
+            }
+        }
+    }
+    return NULL;
+}
 
 void destroySchool(School* school)
 {
