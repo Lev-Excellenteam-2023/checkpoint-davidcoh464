@@ -1,5 +1,4 @@
 #include"School.h"
-#include<stdbool.h>
 
 void menu();
 School* read_data_from_file(const char* file_name);
@@ -9,7 +8,8 @@ void deleteStudent(School* school);
 void searchStudent(School* school);
 void editStudentGrade(School* school);
 void printAllStudents(School* school);
-
+void printTopNStudentsPerCourse(School* school);
+void printAverage(School* school);
 
 
 enum menu_inputs
@@ -67,7 +67,6 @@ School* read_data_from_file(const char* file_name) {
 	fclose(file);
 	return school;
 }
-
 
 void insertNewStudent(School* school)
 {
@@ -135,9 +134,17 @@ void insertNewStudent(School* school)
 			}
 		}
 	}
-	addStudent(school, level, cls, create_student(first_name, last_name, phone, grade));
+	int* levelGet = (int*)malloc(sizeof(int));
+	int* clsGet = (int*)malloc(sizeof(int));
+	if (searchStudentByPhone(school ,phone, levelGet, clsGet) != NULL)
+	{
+		printf("Student alredy exist\n");
+	}
+	else
+		addStudent(school, level, cls, create_student(first_name, last_name, phone, grade));
+	free(levelGet);
+	free(clsGet);
 }
-
 
 void deleteStudent(School* school)
 {
@@ -155,28 +162,32 @@ void deleteStudent(School* school)
 	deleteStudentByPhone(school, phone);
 }
 
-
 void searchStudent(School* school)
 {
 	char phone[11];
 	while (1)
 	{
-		printf("Enter the student phone: ");
+		printf("Enter the student phone to search: ");
 		(void)scanf("%10s", phone);
 		if (contains_only_digits(phone))
 			break;
 		printf("Invalid input. Please enter a valid phone.\n");
 		while (getchar() != '\n'); // Clear the input buffer
 	}
-	Student* st = searchStudentByPhone(school, phone);
-	if (st != NULL)
+	int* level = (int*)malloc(sizeof(int));
+	int* cls = (int*)malloc(sizeof(int));
+	Student* st = searchStudentByPhone(school, phone, level, cls);
+	if (st != NULL && level != NULL && cls != NULL)
 	{
+		printf("Level: %d, Class: %d, ", *level, *cls);
 		print_student(st);
 	}
 	else
 	{
 		printf("Phone not found.\n");
 	}
+	free(level);
+	free(cls);
 }
 
 void editStudentGrade(School* school)
@@ -191,9 +202,12 @@ void editStudentGrade(School* school)
 		printf("Invalid input. Please enter a valid phone.\n");
 		while (getchar() != '\n'); // Clear the input buffer
 	}
-	Student* st = searchStudentByPhone(school, phone);
-	if (st != NULL)
+	int* level = (int*)malloc(sizeof(int));
+	int* cls = (int*)malloc(sizeof(int));
+	Student* st = searchStudentByPhone(school, phone, level, cls);
+	if (st != NULL && level != NULL && cls != NULL)
 	{
+		printf("Level: %d, Class: %d, ", *level, *cls);
 		print_student(st);
 		// Prompt the user to change some grades in the range of 10
 		printf("Enter the number of grades to change (up to 10): ");
@@ -210,6 +224,7 @@ void editStudentGrade(School* school)
 					printf("Enter the new grade for subject %d: ", gradeNum);
 					if (scanf("%d", &newGrade) == 1 && newGrade >= 0 && newGrade <= 100) 
 					{
+						school->sumOfGrades[*level][gradeNum - 1] += (newGrade - st->_grades[gradeNum - 1]);
 						st->_grades[gradeNum - 1] = newGrade;
 					}
 					else 
@@ -236,14 +251,36 @@ void editStudentGrade(School* school)
 	{
 		printf("Phone not found.\n");
 	}
+	free(level);
+	free(cls);
 }
 
 void printAllStudents(School* school)
 {
-	printData(school);
+	printSchoolData(school);
 }
 
-#include <stdio.h>
+void printTopNStudentsPerCourse(School* school)
+{
+	int level, course;
+	printf("Enter the level: ");
+	(void)scanf("%d", &level);
+	printf("\nEnter the course index (0-9): ");
+	(void)scanf("%d", &course);
+	printTop10(school, level, course);
+}
+
+void printAverage(School* school)
+{
+	int level, course;
+	printf("Enter the level: ");
+	(void)scanf("%d", &level);
+	printf("\nEnter the course index (0-9): ");
+	(void)scanf("%d", &course);
+	double avg = getAverage(school, level, course);
+	if (avg != -1)
+		printf("Average in level %d, course %d is %f", level, course, avg);
+}
 
 void menu() {
 	char file_name[] = "students_with_class.txt";
@@ -293,13 +330,13 @@ void menu() {
 			printAllStudents(school);
 			break;
 		case Top10:
-			// printTopNStudentsPerCourse();
+			printTopNStudentsPerCourse(school);
 			break;
 		case UnderperformedStudents:
 			// printUnderperformedStudents();
 			break;
 		case Average:
-			// printAverage();
+			printAverage(school);
 			break;
 		case Export:
 			// exportDatabase();

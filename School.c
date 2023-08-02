@@ -16,6 +16,11 @@ School* createSchool()
 		{
 			newSchool->students[i][j] = NULL;
 		}
+        newSchool->numOfStudents[i] = 0;
+        for (int k = 0; k < Num_Of_Grades; ++k)
+        {
+            newSchool->sumOfGrades[i][k] = 0;
+        }
 	}
 	return newSchool;
 }
@@ -30,6 +35,12 @@ void addStudent(School* school, int level, int cls, Student st)
         printf("Error\n");
         return;
     }
+    school->numOfStudents[level]++;
+    for (int i = 0; i < Num_Of_Grades; ++i)
+    {
+        school->sumOfGrades[level][i] += st._grades[i];
+    }
+
     if (school->students[level][cls] == NULL)
     {
         school->students[level][cls] = createStudentNode(st);
@@ -43,7 +54,7 @@ void addStudent(School* school, int level, int cls, Student st)
     head->next = createStudentNode(st);
 }
 
-void printData(School* school)
+void printSchoolData(School* school)
 {
     for (int i = 0; i < Num_Of_Level; ++i)
     {
@@ -52,6 +63,7 @@ void printData(School* school)
             StudentNode* head = school->students[i][j];
             while (head != NULL)
             {
+                printf("Level: %d, Class: %d, ", i, j);
                 print_student(&head->data);
                 head = head->next;
             }
@@ -68,6 +80,7 @@ void deleteStudentByPhone(School* school, const char* phone)
             StudentNode* head = school->students[i][j];
             if (head != NULL && strcmp(head->data._phone, phone) == 0)
             {
+
                 school->students[i][j] = head->next;
                 destroyStudentNode(head);
                 return;
@@ -76,6 +89,12 @@ void deleteStudentByPhone(School* school, const char* phone)
             {
                 if (strcmp(phone, head->next->data._phone) == 0)
                 {
+                    school->numOfStudents[i]--;
+                    for (int k = 0; k < Num_Of_Grades; ++k)
+                    {
+                        school->sumOfGrades[i][k] -= head->next->data._grades[k];
+                    }
+
                     StudentNode* next = head->next->next;
                     destroyStudentNode(head->next);
                     head->next = next;
@@ -88,8 +107,10 @@ void deleteStudentByPhone(School* school, const char* phone)
     printf("Phone not found.\n");
 }
 
-Student* searchStudentByPhone(School* school, const char* phone)
+Student* searchStudentByPhone(School* school, const char* phone, int* level, int* cls)
 {
+    *level = -1;
+    *cls = -1;
     for (int i = 0; i < Num_Of_Level; ++i)
     {
         for (int j = 0; j < Num_Of_Class; ++j)
@@ -99,6 +120,8 @@ Student* searchStudentByPhone(School* school, const char* phone)
             {
                 if (strcmp(phone, current->data._phone) == 0)
                 {
+                    *level = i;
+                    *cls = j;
                     return &(current->data);
                 }
                 current = current->next;
@@ -127,7 +150,83 @@ void destroySchool(School* school)
             }
         }
     }
-
     // Finally, free the memory for the School itself
     free(school);
+}
+
+void printTop10(School* school, int level, int course)
+{
+    --level;
+    if (level >= Num_Of_Level || level < 0 || course < 0 || course >= Num_Of_Grades)
+    {
+        printf("Error\n");
+        return;
+    }
+
+    int topGrades[10]; // Array to store the top 10 grades
+    for (int i = 0; i < 10; ++i)
+    {
+        topGrades[i] = 0;
+    }
+
+    Student* topStudents[10]; // Array to store pointers to the top 10 students
+    for (int i = 0; i < 10; ++i)
+    {
+        topStudents[i] = NULL;
+    }
+
+    for (int cls = 0; cls < Num_Of_Class; ++cls)
+    {
+        StudentNode* current = school->students[level][cls];
+        while (current != NULL)
+        {
+            int studentGrade = current->data._grades[course];
+
+            // Compare with the top 10 grades
+            for (int i = 0; i < 10; ++i)
+            {
+                if (studentGrade > topGrades[i])
+                {
+                    // Shift the lower grades down the list
+                    for (int j = 9; j > i; --j)
+                    {
+                        topGrades[j] = topGrades[j - 1];
+                        topStudents[j] = topStudents[j - 1];
+                    }
+
+                    // Insert the new top grade and student
+                    topGrades[i] = studentGrade;
+                    topStudents[i] = &(current->data);
+                    break;
+                }
+            }
+
+            current = current->next;
+        }
+    }
+
+    printf("Top 10 Students in Level %d and Course %d:\n", level + 1, course);
+    for (int i = 0; i < 10; ++i)
+    {
+        if (topStudents[i] != NULL)
+        {
+            print_student(topStudents[i]);
+        }
+    }
+}
+
+double getAverage(School* school, int level, int course)
+{
+    --level;
+    if (level < 0 || level >= Num_Of_Level || course < 0 || course >= Num_Of_Grades)
+    {
+        printf("Error invalid input.\n");
+        return -1.0;
+    }
+    if (school->numOfStudents[level] == 0)
+    {
+        printf("There are no students in level %d.\n", level + 1);
+        return -1.0;
+    }
+    return (double)school->sumOfGrades[level][course] / school->numOfStudents[level];
 }
