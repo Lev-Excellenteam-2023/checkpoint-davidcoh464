@@ -63,11 +63,22 @@ void printSchoolData(School* school)
             StudentNode* head = school->students[i][j];
             while (head != NULL)
             {
-                printf("Level: %d, Class: %d, ", i, j);
-                print_student(&head->data);
+                printf("Level: %d, Class: %d, ", i + 1, j + 1);
+                print_student(&(head->data));
                 head = head->next;
             }
         }
+    }
+}
+
+void removeStudentGradeAndPrint(School* school, Student* st, int level, int cls)
+{
+    printf("Delete student in Level: %d, Class: %d, ", level + 1, cls + 1);
+    print_student(st);
+    school->numOfStudents[level]--;
+    for (int course = 0; course < Num_Of_Grades; ++course)
+    {
+        school->sumOfGrades[level][course] -= st->_grades[course];
     }
 }
 
@@ -80,7 +91,7 @@ void deleteStudentByPhone(School* school, const char* phone)
             StudentNode* head = school->students[i][j];
             if (head != NULL && strcmp(head->data._phone, phone) == 0)
             {
-
+                removeStudentGradeAndPrint(school, &head->data, i, j);
                 school->students[i][j] = head->next;
                 destroyStudentNode(head);
                 return;
@@ -89,12 +100,7 @@ void deleteStudentByPhone(School* school, const char* phone)
             {
                 if (strcmp(phone, head->next->data._phone) == 0)
                 {
-                    school->numOfStudents[i]--;
-                    for (int k = 0; k < Num_Of_Grades; ++k)
-                    {
-                        school->sumOfGrades[i][k] -= head->next->data._grades[k];
-                    }
-
+                    removeStudentGradeAndPrint(school, &head->next->data, i, j);
                     StudentNode* next = head->next->next;
                     destroyStudentNode(head->next);
                     head->next = next;
@@ -109,8 +115,6 @@ void deleteStudentByPhone(School* school, const char* phone)
 
 Student* searchStudentByPhone(School* school, const char* phone, int* level, int* cls)
 {
-    *level = -1;
-    *cls = -1;
     for (int i = 0; i < Num_Of_Level; ++i)
     {
         for (int j = 0; j < Num_Of_Class; ++j)
@@ -120,8 +124,10 @@ Student* searchStudentByPhone(School* school, const char* phone, int* level, int
             {
                 if (strcmp(phone, current->data._phone) == 0)
                 {
-                    *level = i;
-                    *cls = j;
+                    if (level != NULL)
+                        *level = i + 1;
+                    if (cls != NULL)
+                        *cls = j + 1;
                     return &(current->data);
                 }
                 current = current->next;
@@ -229,4 +235,72 @@ double getAverage(School* school, int level, int course)
         return -1.0;
     }
     return (double)school->sumOfGrades[level][course] / school->numOfStudents[level];
+}
+
+double getLevelAverage(School* school, int level)
+{
+    double avg = 0.0;
+    for (int course = 0; course < Num_Of_Grades; ++course)
+    {
+        avg += getAverage(school, level, course);
+    }
+    return avg / Num_Of_Grades;
+}
+
+void printUnderperformedStudents(School* school, int under_by)
+{
+    for (int level = 0; level < Num_Of_Level; ++level)
+    {
+        double min_avg = getLevelAverage(school, level + 1) - under_by;
+        for (int cls = 0; cls < Num_Of_Class; ++cls)
+        {
+            StudentNode* head = school->students[level][cls];
+            while (head != NULL)
+            {
+                double avgStudent = 0.0;
+                for (int course = 0; course < Num_Of_Grades; ++course) 
+                {
+                    avgStudent += head->data._grades[course];
+                }
+                avgStudent /= Num_Of_Grades;
+                if (avgStudent < min_avg)
+                {
+                    printf("Level: %d, Class: %d, ", level + 1, cls + 1);
+                    print_student(&(head->data));
+                }
+                head = head->next;
+            }
+        }
+    }
+}
+
+void exportDatabase(School* school, const char* filename)
+{
+    FILE* file = fopen(filename, "w");
+    if (file == NULL)
+    {
+        printf("Error opening file for writing.\n");
+        return;
+    }
+
+    for (int level = 0; level < Num_Of_Level; ++level)
+    {
+        for (int cls = 0; cls < Num_Of_Class; ++cls)
+        {
+            StudentNode* head = school->students[level][cls];
+            while (head != NULL)
+            {
+                fprintf(file, "%s %s %s ", head->data._first_name, head->data._last_name, head->data._phone);
+                fprintf(file, "%d %d", level + 1, cls + 1);
+                for (int course = 0; course < Num_Of_Grades; ++course)
+                {
+                    fprintf(file, " %d", head->data._grades[course]);
+                }
+                fprintf(file, "\n");
+                head = head->next;
+            }
+        }
+    }
+
+    fclose(file);
 }

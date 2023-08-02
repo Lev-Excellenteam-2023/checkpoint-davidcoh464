@@ -1,15 +1,75 @@
 #include"School.h"
 
+/**
+ * Displays the main menu for the school management system and handles user input.
+ */
 void menu();
+
+/**
+ * Reads student data from a file and creates a School structure.
+ *
+ * @param file_name The name of the file containing student data.
+ * @return A pointer to the created School structure, or NULL if an error occurred.
+ */
 School* read_data_from_file(const char* file_name);
+
+/**
+ * Checks if a given string contains only digits.
+ *
+ * @param a The input string to check.
+ * @return true if the string contains only digits, false otherwise.
+ */
 bool contains_only_digits(const char* a);
+
+/**
+ * Prompts the user to input details for a new student and adds the student to the school.
+ *
+ * @param school Pointer to the School structure.
+ */
 void insertNewStudent(School* school);
+
+/**
+ * Prompts the user to input a student's phone number and deletes the student with that phone number from the school.
+ *
+ * @param school Pointer to the School structure.
+ */
 void deleteStudent(School* school);
+
+/**
+ * Prompts the user to input a student's phone number and searches for the student in the school.
+ *
+ * @param school Pointer to the School structure.
+ */
 void searchStudent(School* school);
+
+/**
+ * Prompts the user to input a student's phone number, searches for the student, and allows editing their grades.
+ *
+ * @param school Pointer to the School structure.
+ */
 void editStudentGrade(School* school);
+
+/**
+ * Prints the details of all students in the school.
+ *
+ * @param school Pointer to the School structure.
+ */
 void printAllStudents(School* school);
+
+/**
+ * Prints the top N students for each course in a given school.
+ *
+ * @param school Pointer to the School structure.
+ */
 void printTopNStudentsPerCourse(School* school);
+
+/**
+ * Prints the average grade for each course in a given school.
+ *
+ * @param school Pointer to the School structure.
+ */
 void printAverage(School* school);
+
 
 
 enum menu_inputs
@@ -112,11 +172,17 @@ void insertNewStudent(School* school)
 		printf("Enter Phone: ");
 		(void)scanf("%10s", phone);
 		if (contains_only_digits(phone))
-			break;
+		{
+			if (searchStudentByPhone(school, phone, NULL, NULL) != NULL)
+			{
+				printf("Student alredy exist\n");
+			}
+			else
+				break;
+		}
 		printf("Invalid input. Please enter a valid phone.\n");
 		while (getchar() != '\n'); // Clear the input buffer
 	}
-
 	// Data validation for Grades
 	printf("Enter %d Grades: ", Num_Of_Grades);
 	for (int i = 0; i < Num_Of_Grades; i++)
@@ -134,16 +200,7 @@ void insertNewStudent(School* school)
 			}
 		}
 	}
-	int* levelGet = (int*)malloc(sizeof(int));
-	int* clsGet = (int*)malloc(sizeof(int));
-	if (searchStudentByPhone(school ,phone, levelGet, clsGet) != NULL)
-	{
-		printf("Student alredy exist\n");
-	}
-	else
-		addStudent(school, level, cls, create_student(first_name, last_name, phone, grade));
-	free(levelGet);
-	free(clsGet);
+	addStudent(school, level, cls, create_student(first_name, last_name, phone, grade));
 }
 
 void deleteStudent(School* school)
@@ -158,7 +215,6 @@ void deleteStudent(School* school)
 		printf("Invalid input. Please enter a valid phone.\n");
 		while (getchar() != '\n'); // Clear the input buffer
 	}
-	printf("correct\n");
 	deleteStudentByPhone(school, phone);
 }
 
@@ -333,13 +389,13 @@ void menu() {
 			printTopNStudentsPerCourse(school);
 			break;
 		case UnderperformedStudents:
-			// printUnderperformedStudents();
+			printUnderperformedStudents(school, 15);
 			break;
 		case Average:
 			printAverage(school);
 			break;
 		case Export:
-			// exportDatabase();
+			exportDatabase(school, "dataExport.txt");
 			break;
 		case Exit:
 			destroySchool(school);
@@ -353,4 +409,3 @@ void menu() {
 		while (getchar() != '\n');
 	} while (input != Exit);
 }
-
